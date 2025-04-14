@@ -7,6 +7,21 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDuiLWckDwDLI16-rG4yZlJAblBUNeBssk",
+            authDomain: "flow-period-tracker-38d74.firebaseapp.com",
+            projectId: "flow-period-tracker-38d74",
+            storageBucket: "flow-period-tracker-38d74.firebasestorage.app",
+            messagingSenderId: "598755371515",
+            appId: "1:598755371515:web:8980e1ccb01a536d35c35e"
+        };
+        firebase.initializeApp(firebaseConfig);
+    </script>
 </head>
 <body>
     <div class="parallax-wrapper">
@@ -34,6 +49,20 @@
             </nav>
         </header>
 
+        <!-- Auth Modal -->
+        <div class="auth-modal" id="auth-modal" style="display: none;">
+            <div class="auth-content">
+                <span class="close-auth">&times;</span>
+                <h2 id="auth-title">Login</h2>
+                <form class="auth-form" id="auth-form">
+                    <input type="email" id="auth-email" placeholder="Email" required>
+                    <input type="password" id="auth-password" placeholder="Password" required>
+                    <button type="submit" id="auth-submit">Login</button>
+                </form>
+                <p class="auth-switch">Don't have an account? <span id="switch-auth">Sign up</span></p>
+            </div>
+        </div>
+
         <!-- Hero Section -->
         <section id="home" class="hero parallax-section">
             <div class="container">
@@ -46,7 +75,7 @@
                     </div>
                 </div>
                 <div class="hero-image animate__animated animate__fadeInRight">
-                    <img src="/api/placeholder/500/500" alt="Woman using Flow app">
+                    <img src="https://via.placeholder.com/500x500" alt="Woman using Flow app">
                 </div>
             </div>
             <div class="wave-divider">
@@ -223,7 +252,7 @@
                     </div>
                 </div>
                 <div class="insights-chart">
-                    <img src="/api/placeholder/800/400" alt="Insights chart">
+                    <img src="https://via.placeholder.com/800x400" alt="Insights chart">
                 </div>
             </div>
         </section>
@@ -240,7 +269,7 @@
                             <p>"Flow has completely changed how I understand my body. The insights are incredibly accurate, and the interface is so easy to use!"</p>
                         </div>
                         <div class="testimonial-author">
-                            <img src="/api/placeholder/60/60" alt="Sarah J.">
+                            <img src="https://via.placeholder.com/60x60" alt="Sarah J.">
                             <div>
                                 <h4>Sarah J.</h4>
                                 <p>Flow User for 1 year</p>
@@ -252,7 +281,7 @@
                             <p>"I've tried many period tracking apps, but Flow stands out for its privacy features and the detailed insights it provides."</p>
                         </div>
                         <div class="testimonial-author">
-                            <img src="/api/placeholder/60/60" alt="Maria T.">
+                            <img src="https://via.placeholder.com/60x60" alt="Maria T.">
                             <div>
                                 <h4>Maria T.</h4>
                                 <p>Flow User for 6 months</p>
@@ -264,7 +293,7 @@
                             <p>"The predictions are amazingly accurate, and the symptom tracking has helped me identify patterns I never noticed before."</p>
                         </div>
                         <div class="testimonial-author">
-                            <img src="/api/placeholder/60/60" alt="Alex K.">
+                            <img src="https://via.placeholder.com/60x60" alt="Alex K.">
                             <div>
                                 <h4>Alex K.</h4>
                                 <p>Flow User for 2 years</p>
@@ -399,67 +428,7 @@
         </footer>
     </div>
 
-    <!-- Login Modal -->
-    <div class="modal" id="loginModal">
-        <div class="modal-content">
-            <span class="modal-close">&times;</span>
-            <h2>Log In</h2>
-            <form id="loginForm">
-                <div class="form-group">
-                    <label for="loginEmail">Email</label>
-                    <input type="email" id="loginEmail" name="email" required>
-                </div>
-                <div class="form-group">
-                    <label for="loginPassword">Password</label>
-                    <input type="password" id="loginPassword" name="password" required>
-                </div>
-                <div class="form-group form-check">
-                    <input type="checkbox" id="rememberMe" name="rememberMe">
-                    <label for="rememberMe">Remember me</label>
-                </div>
-                <button type="submit" class="btn btn-primary btn-full">Log In</button>
-            </form>
-            <div class="modal-footer">
-                <p>Don't have an account? <a href="#signup">Sign up</a></p>
-                <p><a href="#">Forgot your password?</a></p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Signup Modal -->
-    <div class="modal" id="signupModal">
-        <div class="modal-content">
-            <span class="modal-close">&times;</span>
-            <h2>Create Account</h2>
-            <form id="signupForm">
-                <div class="form-group">
-                    <label for="signupName">Full Name</label>
-                    <input type="text" id="signupName" name="name" required>
-                </div>
-                <div class="form-group">
-                    <label for="signupEmail">Email</label>
-                    <input type="email" id="signupEmail" name="email" required>
-                </div>
-                <div class="form-group">
-                    <label for="signupPassword">Password</label>
-                    <input type="password" id="signupPassword" name="password" required>
-                </div>
-                <div class="form-group">
-                    <label for="signupConfirmPassword">Confirm Password</label>
-                    <input type="password" id="signupConfirmPassword" name="confirmPassword" required>
-                </div>
-                <div class="form-group form-check">
-                    <input type="checkbox" id="termsAgreement" name="termsAgreement" required>
-                    <label for="termsAgreement">I agree to the <a href="#">Terms and Conditions</a></label>
-                </div>
-                <button type="submit" class="btn btn-primary btn-full">Create Account</button>
-            </form>
-            <div class="modal-footer">
-                <p>Already have an account? <a href="#login">Log in</a></p>
-            </div>
-        </div>
-    </div>
-
+    <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
     <script src="script.js"></script>
 </body>
