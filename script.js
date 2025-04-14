@@ -1,271 +1,286 @@
-// Initialize AOS Library
-document.addEventListener('DOMContentLoaded', function() {
-    // Check if AOS exists
-    if (typeof AOS !== 'undefined') {
-        AOS.init({
-            duration: 800,
-            easing: 'ease-in-out',
-            once: true,
-            mirror: false,
-            offset: 50
-        });
-    }
+// Initialize Firebase
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-    // Variables
-    const menuToggle = document.getElementById('menu-toggle');
-    const navLinks = document.getElementById('nav-links');
-    const navbar = document.querySelector('.navbar');
-    const testimonialSlider = document.querySelector('.testimonial-slider');
-    const testimonialNavDots = document.querySelectorAll('.testimonial-nav span');
-    const modalTriggers = document.querySelectorAll('a[href="#login"], a[href="#signup"]');
-    const modals = document.querySelectorAll('.modal');
-    const modalCloses = document.querySelectorAll('.modal-close');
-    
-    // Mobile Menu Toggle
-    if (menuToggle && navLinks) {
-        menuToggle.addEventListener('click', function() {
-            navLinks.classList.toggle('active');
-            menuToggle.querySelector('i').classList.toggle('fa-bars');
-            menuToggle.querySelector('i').classList.toggle('fa-times');
-        });
-    }
-    
-    // Navbar Scroll Effect
-    window.addEventListener('scroll', function() {
-        if (navbar) {
-            if (window.scrollY > 50) {
-                navbar.classList.add('scrolled');
-            } else {
-                navbar.classList.remove('scrolled');
-            }
-        }
+// DOM Elements
+const menuToggle = document.getElementById('menu-toggle');
+const navLinks = document.getElementById('nav-links');
+const navbar = document.querySelector('.navbar');
+const authModal = document.getElementById('auth-modal') || createAuthModal();
+const authForm = document.getElementById('auth-form');
+const authTitle = document.getElementById('auth-title');
+const authSubmit = document.getElementById('auth-submit');
+const authSwitch = document.getElementById('switch-auth');
+const authButtons = document.querySelector('.auth-buttons');
+const days = document.querySelectorAll('.day');
+const testimonialSlider = document.querySelector('.testimonial-slider');
+const testimonialNav = document.querySelectorAll('.testimonial-nav span');
+const contactForm = document.getElementById('contactForm');
+
+// Create auth modal if it doesn't exist
+function createAuthModal() {
+    const modal = document.createElement('div');
+    modal.id = 'auth-modal';
+    modal.className = 'auth-modal';
+    modal.innerHTML = `
+        <div class="auth-content">
+            <span class="close-auth">&times;</span>
+            <h2 id="auth-title">Login</h2>
+            <form class="auth-form" id="auth-form">
+                <input type="email" id="auth-email" placeholder="Email" required>
+                <input type="password" id="auth-password" placeholder="Password" required>
+                <button type="submit" id="auth-submit">Login</button>
+            </form>
+            <p class="auth-switch">Don't have an account? <span id="switch-auth">Sign up</span></p>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    return modal;
+}
+
+// Mobile Menu Toggle
+if (menuToggle && navLinks) {
+    menuToggle.addEventListener('click', function() {
+        navLinks.classList.toggle('active');
+        menuToggle.innerHTML = navLinks.classList.contains('active') ? 
+            '<i class="fas fa-times"></i>' : '<i class="fas fa-bars"></i>';
     });
-    
-    // Smooth Scrolling for Internal Links
-    document.querySelectorAll('a[href^="#"]:not([href="#login"]):not([href="#signup"])').forEach(anchor => {
-        anchor.addEventListener('click', function(e) {
-            e.preventDefault();
-            
+}
+
+// Navbar Scroll Effect
+window.addEventListener('scroll', function() {
+    if (window.scrollY > 50) {
+        navbar.classList.add('scrolled');
+    } else {
+        navbar.classList.remove('scrolled');
+    }
+});
+
+// Smooth Scrolling for Anchor Links
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function(e) {
+        if (this.getAttribute('href') === '#login' || this.getAttribute('href') === '#signup') return;
+        
+        e.preventDefault();
+        const targetId = this.getAttribute('href');
+        if (targetId === '#') return;
+        
+        const targetElement = document.querySelector(targetId);
+        if (targetElement) {
+            window.scrollTo({
+                top: targetElement.offsetTop - 80,
+                behavior: 'smooth'
+            });
+
             // Close mobile menu if open
-            if (navLinks && navLinks.classList.contains('active')) {
+            if (navLinks.classList.contains('active')) {
                 navLinks.classList.remove('active');
-                menuToggle.querySelector('i').classList.remove('fa-times');
-                menuToggle.querySelector('i').classList.add('fa-bars');
-            }
-            
-            const targetId = this.getAttribute('href');
-            if (targetId === '#') return;
-            
-            const targetElement = document.querySelector(targetId);
-            if (targetElement) {
-                window.scrollTo({
-                    top: targetElement.offsetTop - 80,
-                    behavior: 'smooth'
-                });
-            }
-        });
-    });
-    
-    // Active Navigation Link on Scroll
-    const sections = document.querySelectorAll('section[id]');
-    
-    window.addEventListener('scroll', function() {
-        let current = '';
-        sections.forEach(section => {
-            const sectionTop = section.offsetTop - 100;
-            const sectionHeight = section.offsetHeight;
-            if (pageYOffset >= sectionTop && pageYOffset < sectionTop + sectionHeight) {
-                current = section.getAttribute('id');
-            }
-        });
-        
-        document.querySelectorAll('.nav-links a').forEach(link => {
-            link.classList.remove('active');
-            if (link.getAttribute('href') === `#${current}`) {
-                link.classList.add('active');
-            }
-        });
-    });
-    
-    // Testimonial Slider
-    let currentTestimonial = 0;
-    
-    function showTestimonial(index) {
-        if (!testimonialSlider) return;
-        
-        testimonialSlider.style.transform = `translateX(-${index * 100}%)`;
-        
-        testimonialNavDots.forEach((dot, i) => {
-            dot.classList.toggle('active', i === index);
-        });
-    }
-    
-    // Testimonial Navigation
-    testimonialNavDots.forEach((dot, index) => {
-        dot.addEventListener('click', () => {
-            currentTestimonial = index;
-            showTestimonial(currentTestimonial);
-        });
-    });
-    
-    // Auto Testimonial Slider
-    setInterval(() => {
-        if (!testimonialSlider) return;
-        
-        currentTestimonial = (currentTestimonial + 1) % testimonialNavDots.length;
-        showTestimonial(currentTestimonial);
-    }, 5000);
-    
-    // Modal Handling
-    modalTriggers.forEach(trigger => {
-        trigger.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            const targetModal = this.getAttribute('href').substring(1);
-            const modal = document.getElementById(`${targetModal}Modal`);
-            
-            if (modal) {
-                modal.classList.add('active');
-                document.body.style.overflow = 'hidden';
-            }
-        });
-    });
-    
-    modalCloses.forEach(close => {
-        close.addEventListener('click', function() {
-            const modal = this.closest('.modal');
-            if (modal) {
-                modal.classList.remove('active');
-                document.body.style.overflow = '';
-            }
-        });
-    });
-    
-    window.addEventListener('click', function(e) {
-        modals.forEach(modal => {
-            if (e.target === modal) {
-                modal.classList.remove('active');
-                document.body.style.overflow = '';
-            }
-        });
-    });
-    
-    // Calendar Interaction
-    const days = document.querySelectorAll('.days .day');
-    
-    days.forEach(day => {
-        day.addEventListener('click', function() {
-            if (!this.classList.contains('prev-month') && !this.classList.contains('next-month')) {
-                this.classList.toggle('period');
-            }
-        });
-    });
-    
-    // Form Submissions
-    const contactForm = document.getElementById('contactForm');
-    const loginForm = document.getElementById('loginForm');
-    const signupForm = document.getElementById('signupForm');
-    
-    if (contactForm) {
-        contactForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            // Implement your form submission logic here
-            // For demo purposes, just show an alert
-            alert('Thank you for your message! We will get back to you soon.');
-            this.reset();
-        });
-    }
-    
-    if (loginForm) {
-        loginForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            // Implement your login logic here
-            // For demo purposes, just show an alert
-            alert('Login functionality would be implemented here.');
-        });
-    }
-    
-    if (signupForm) {
-        signupForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            // Implement your signup logic here
-            // For demo purposes, just show an alert
-            alert('Sign up functionality would be implemented here.');
-        });
-    }
-    
-    // Parallax Effect for Sections
-    window.addEventListener('scroll', function() {
-        const parallaxSections = document.querySelectorAll('.parallax-section');
-        
-        parallaxSections.forEach(section => {
-            const scrollPosition = window.pageYOffset;
-            const sectionTop = section.offsetTop;
-            const sectionHeight = section.offsetHeight;
-            
-            // Check if section is in view
-            if (scrollPosition + window.innerHeight > sectionTop && 
-                scrollPosition < sectionTop + sectionHeight) {
-                const yPos = -(scrollPosition - sectionTop) / 5;
-                section.style.backgroundPosition = `center ${yPos}px`;
-            }
-        });
-    });
-    
-    // Calendar Functionality
-    const prevMonthBtn = document.querySelector('.calendar-controls span:first-child');
-    const nextMonthBtn = document.querySelector('.calendar-controls span:last-child');
-    const calendarMonth = document.querySelector('.calendar-header h3');
-    
-    // Define months for calendar
-    const months = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
-    ];
-    
-    let currentMonth = 3; // April (0-indexed)
-    let currentYear = 2025;
-    
-    if (prevMonthBtn && nextMonthBtn && calendarMonth) {
-        prevMonthBtn.addEventListener('click', function() {
-            currentMonth--;
-            if (currentMonth < 0) {
-                currentMonth = 11;
-                currentYear--;
-            }
-            calendarMonth.textContent = `${months[currentMonth]} ${currentYear}`;
-        });
-        
-        nextMonthBtn.addEventListener('click', function() {
-            currentMonth++;
-            if (currentMonth > 11) {
-                currentMonth = 0;
-                currentYear++;
-            }
-            calendarMonth.textContent = `${months[currentMonth]} ${currentYear}`;
-        });
-    }
-    
-    // Initialize contact form animations
-    const formGroups = document.querySelectorAll('.form-group');
-    
-    formGroups.forEach(group => {
-        const input = group.querySelector('input, textarea');
-        if (input) {
-            input.addEventListener('focus', () => {
-                group.classList.add('focused');
-            });
-            
-            input.addEventListener('blur', () => {
-                if (input.value.trim() === '') {
-                    group.classList.remove('focused');
-                }
-            });
-            
-            // Check on page load if input already has value
-            if (input.value.trim() !== '') {
-                group.classList.add('focused');
+                menuToggle.innerHTML = '<i class="fas fa-bars"></i>';
             }
         }
     });
 });
+
+// Active Navigation Link on Scroll
+const sections = document.querySelectorAll('section[id]');
+window.addEventListener('scroll', function() {
+    let current = '';
+    sections.forEach(section => {
+        const sectionTop = section.offsetTop - 100;
+        const sectionHeight = section.offsetHeight;
+        if (pageYOffset >= sectionTop && pageYOffset < sectionTop + sectionHeight) {
+            current = section.getAttribute('id');
+        }
+    });
+    
+    document.querySelectorAll('.nav-links a').forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('href') === `#${current}`) {
+            link.classList.add('active');
+        }
+    });
+});
+
+// Auth State Listener
+auth.onAuthStateChanged(user => {
+    if (user) {
+        // User is signed in
+        authButtons.innerHTML = `
+            <div class="user-profile">
+                <span class="user-email">${user.email}</span>
+                <button class="logout-btn">Logout</button>
+            </div>
+        `;
+        loadUserData(user.uid);
+    } else {
+        // No user signed in
+        authButtons.innerHTML = `
+            <a href="#login" class="btn btn-outline">Login</a>
+            <a href="#signup" class="btn btn-primary">Sign Up</a>
+        `;
+    }
+});
+
+// Auth Modal Toggle
+function toggleAuthModal(isLogin = true) {
+    authTitle.textContent = isLogin ? 'Login' : 'Sign Up';
+    authSubmit.textContent = isLogin ? 'Login' : 'Sign Up';
+    authSwitch.textContent = isLogin ? 'Sign up' : 'Login';
+    authModal.style.display = 'block';
+}
+
+// Close Modal
+document.querySelector('.close-auth')?.addEventListener('click', () => {
+    authModal.style.display = 'none';
+});
+
+// Switch Between Login/Signup
+authSwitch?.addEventListener('click', () => {
+    const isLogin = authTitle.textContent === 'Login';
+    toggleAuthModal(!isLogin);
+});
+
+// Auth Form Submission
+authForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('auth-email').value;
+    const password = document.getElementById('auth-password').value;
+    const isLogin = authTitle.textContent === 'Login';
+    
+    try {
+        if (isLogin) {
+            await auth.signInWithEmailAndPassword(email, password);
+        } else {
+            await auth.createUserWithEmailAndPassword(email, password);
+        }
+        authModal.style.display = 'none';
+    } catch (error) {
+        alert(error.message);
+    }
+});
+
+// Logout
+document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('logout-btn')) {
+        auth.signOut();
+    }
+});
+
+// Login/Signup Links
+document.addEventListener('click', (e) => {
+    if (e.target.matches('a[href="#login"]')) {
+        e.preventDefault();
+        toggleAuthModal(true);
+    } else if (e.target.matches('a[href="#signup"]')) {
+        e.preventDefault();
+        toggleAuthModal(false);
+    }
+});
+
+// Load User Data
+async function loadUserData(userId) {
+    try {
+        const doc = await db.collection('users').doc(userId).get();
+        if (doc.exists) {
+            const data = doc.data().periodData;
+            updateCalendarWithData(data);
+            return data;
+        }
+        return null;
+    } catch (error) {
+        console.error("Error loading user data:", error);
+        return null;
+    }
+}
+
+// Update Calendar with Saved Data
+function updateCalendarWithData(data) {
+    if (!data) return;
+    
+    days.forEach(day => {
+        if (day.classList.contains('prev-month') || day.classList.contains('next-month')) return;
+        
+        const date = day.textContent;
+        day.classList.remove('period');
+        if (data[date] && data[date].type === 'period') {
+            day.classList.add('period');
+        }
+    });
+}
+
+// Save Period Data
+async function savePeriodData(userId, data) {
+    try {
+        await db.collection('users').doc(userId).set({
+            periodData: data
+        }, { merge: true });
+    } catch (error) {
+        console.error("Error saving data:", error);
+    }
+}
+
+// Calendar Day Click Handler
+days.forEach(day => {
+    day.addEventListener('click', async function() {
+        const user = auth.currentUser;
+        if (!user) {
+            toggleAuthModal(true);
+            return;
+        }
+        
+        if (this.classList.contains('prev-month') || this.classList.contains('next-month')) return;
+        
+        const date = this.textContent;
+        const periodData = await loadUserData(user.uid) || {};
+        
+        if (!periodData[date]) {
+            periodData[date] = { type: 'period' };
+            this.classList.add('period');
+        } else {
+            delete periodData[date];
+            this.classList.remove('period');
+        }
+        
+        await savePeriodData(user.uid, periodData);
+    });
+});
+
+// Testimonial Slider
+let currentTestimonial = 0;
+function showTestimonial(index) {
+    testimonialSlider.style.transform = `translateX(-${index * 100}%)`;
+    testimonialNav.forEach((dot, i) => {
+        dot.classList.toggle('active', i === index);
+    });
+    currentTestimonial = index;
+}
+
+testimonialNav.forEach((dot, index) => {
+    dot.addEventListener('click', () => showTestimonial(index));
+});
+
+// Auto Testimonial Slider
+setInterval(() => {
+    const nextTestimonial = (currentTestimonial + 1) % testimonialNav.length;
+    showTestimonial(nextTestimonial);
+}, 5000);
+
+// Contact Form Submission
+if (contactForm) {
+    contactForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        alert('Thank you for your message! We will get back to you soon.');
+        this.reset();
+    });
+}
+
+// Initialize AOS
+if (typeof AOS !== 'undefined') {
+    AOS.init({
+        duration: 800,
+        easing: 'ease-in-out',
+        once: true,
+        mirror: false,
+        offset: 50
+    });
+}
