@@ -271,35 +271,36 @@ function renderCalendar() {
             dayElement.classList.add('today');
         }
         
-        // Calculate periods and fertile days
+        // Calculate days difference (including the start day)
         const timeDiff = currentDate.getTime() - lastPeriod.getTime();
         const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-        const cycleDay = ((daysDiff % cycleLength) + cycleLength) % cycleLength;
+        
+        // Calculate cycle day (1 to cycleLength)
+        const cycleDay = ((daysDiff % cycleLength) + cycleLength) % cycleLength + 1;
         
         // Apply phase styling
-        if (cycleDay < periodLength) {
+        if (daysDiff >= 0 && cycleDay <= periodLength) {  // Changed to include day 1
             dayElement.classList.add('period-day');
             const cycleNumber = Math.floor(daysDiff / cycleLength) + 1;
-            const periodDay = cycleDay + 1;
-            dayElement.title = `Period Day ${periodDay} (Cycle #${cycleNumber})`;
-            dayElement.addEventListener('click', () => showCyclePhaseInfo('period', periodDay));
+            dayElement.title = `Period Day ${cycleDay} (Cycle #${cycleNumber})`;
+            dayElement.addEventListener('click', () => showCyclePhaseInfo('period', cycleDay));
         } 
-        else if (cycleDay === cycleLength - 14) {
+        else if (daysDiff >= 0 && cycleDay === cycleLength - 14) {
             dayElement.classList.add('ovulation-day');
             dayElement.title = 'Estimated Ovulation Day';
             dayElement.addEventListener('click', () => showCyclePhaseInfo('ovulation'));
         } 
-        else if (cycleDay >= cycleLength - 18 && cycleDay <= cycleLength - 12) {
+        else if (daysDiff >= 0 && cycleDay >= cycleLength - 18 && cycleDay <= cycleLength - 12) {
             dayElement.classList.add('fertile-day');
             dayElement.title = 'Fertile Window';
             dayElement.addEventListener('click', () => showCyclePhaseInfo('fertile'));
         } 
-        else if (cycleDay >= periodLength && cycleDay < cycleLength - 14) {
+        else if (daysDiff >= 0 && cycleDay > periodLength && cycleDay < cycleLength - 14) {
             dayElement.classList.add('follicular-day');
             dayElement.title = 'Follicular Phase';
             dayElement.addEventListener('click', () => showCyclePhaseInfo('follicular'));
         } 
-        else {
+        else if (daysDiff >= 0) {
             dayElement.classList.add('luteal-day');
             dayElement.title = 'Luteal Phase';
             dayElement.addEventListener('click', () => showCyclePhaseInfo('luteal'));
