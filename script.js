@@ -200,7 +200,6 @@ function updateCycleInfo() {
     const periodLength = currentUser.cycleData.periodLength;
     
     // Calculate days since last period
-    // Calculate days since last period
     const daysSinceLastPeriod = Math.floor((today - lastPeriod) / (1000 * 60 * 60 * 24));
     const dayInCycle = (daysSinceLastPeriod % cycleLength) + 1;
     
@@ -271,21 +270,21 @@ function renderCalendar() {
             today.getFullYear() === displayDate.getFullYear()) {
             dayElement.classList.add('today');
         }
+        
+        // Calculate days difference
         const timeDiff = currentDate.getTime() - lastPeriod.getTime();
         const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-
-          // Calculate cycle day (0 to cycleLength-1)
+        
+        // Calculate cycle day (1 to cycleLength)
         const cycleDay = (daysDiff % cycleLength) + 1;
         
         // Apply phase styling
-        // Apply phase styling
-         if (daysDiff >= 0 && cycleDay <= periodLength) {
-        dayElement.classList.add('period-day');
-        const cycleNumber = Math.floor(daysDiff / cycleLength) + 1;
-        const periodDay = cycleDay;
-        dayElement.title = `Period Day ${periodDay} (Cycle #${cycleNumber})`;
-        dayElement.addEventListener('click', () => showCyclePhaseInfo('period', periodDay));
-                                                                                         }
+        if (daysDiff >= 0 && cycleDay <= periodLength) {
+            dayElement.classList.add('period-day');
+            const cycleNumber = Math.floor(daysDiff / cycleLength) + 1;
+            dayElement.title = `Period Day ${cycleDay} (Cycle #${cycleNumber})`;
+            dayElement.addEventListener('click', () => showCyclePhaseInfo('period', cycleDay));
+        }
         else if (daysDiff >= 0 && cycleDay === cycleLength - 14) {
             dayElement.classList.add('ovulation-day');
             dayElement.title = 'Estimated Ovulation Day';
