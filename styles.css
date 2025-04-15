@@ -320,21 +320,29 @@ nav {
     justify-content: center;
     border-radius: 50%;
     cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
 }
 
-.weekday {
-    font-weight: bold;
-    color: var(--light-text);
+.calendar-day:hover {
+    transform: scale(1.1);
+}
+
+.empty {
+    background: none;
+    cursor: default;
 }
 
 .period-day {
     background-color: var(--primary);
     color: var(--text);
+    font-weight: bold;
 }
 
 .ovulation-day {
     background-color: var(--accent);
     color: var(--white);
+    font-weight: bold;
 }
 
 .fertile-day {
@@ -342,8 +350,17 @@ nav {
     color: var(--text);
 }
 
+.follicular-day {
+    border: 1px dashed #b8e0d2;
+}
+
+.luteal-day {
+    border: 1px dashed #d3bccc;
+}
+
 .today {
     border: 2px solid var(--accent);
+    font-weight: bold;
 }
 
 .settings-container {
@@ -401,6 +418,157 @@ footer {
     color: var(--light-text);
 }
 
+/* Cycle Info Modal */
+.cycle-info-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.cycle-info-content {
+    background-color: var(--white);
+    padding: 30px;
+    border-radius: 10px;
+    max-width: 500px;
+    width: 90%;
+    position: relative;
+}
+
+.modal-close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--accent);
+}
+
+.phase-description {
+    margin-bottom: 15px;
+    line-height: 1.6;
+}
+
+.phase-tips {
+    background-color: var(--secondary);
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 15px;
+}
+
+/* Calendar Legend */
+.cycle-phase-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: center;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin-right: 15px;
+}
+
+.legend-color {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.legend-period {
+    background-color: var(--primary);
+}
+
+.legend-ovulation {
+    background-color: var(--accent);
+}
+
+.legend-fertile {
+    background-color: var(--secondary);
+}
+
+.legend-follicular {
+    border: 1px dashed #b8e0d2;
+    background-color: transparent;
+}
+
+.legend-luteal {
+    border: 1px dashed #d3bccc;
+    background-color: transparent;
+}
+
+/* Cycle Tips Carousel */
+.cycle-tips-container {
+    background-color: var(--white);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    margin: 30px 0;
+    position: relative;
+}
+
+.tips-title {
+    color: var(--accent);
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.tips-carousel {
+    display: flex;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+}
+
+.tip-card {
+    min-width: 100%;
+    padding: 15px;
+    box-sizing: border-box;
+}
+
+.tip-card h4 {
+    color: var(--accent);
+    margin-bottom: 10px;
+}
+
+.prev-tip, .next-tip {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    font-size: 16px;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.3s;
+}
+
+.prev-tip:hover, .next-tip:hover {
+    opacity: 1;
+}
+
+.prev-tip {
+    left: 10px;
+}
+
+.next-tip {
+    right: 10px;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .hero h1 {
@@ -409,5 +577,25 @@ footer {
     
     .features-grid {
         grid-template-columns: 1fr;
+    }
+    
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .logout-btn {
+        margin-top: 15px;
+    }
+    
+    .calendar-day {
+        height: 30px;
+        font-size: 14px;
+    }
+    
+    .cycle-phase-legend {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
     }
 }
