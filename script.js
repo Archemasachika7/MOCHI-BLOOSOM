@@ -36,10 +36,11 @@ const inspirationalMessages = [
     "Tuning into your body's rhythm is a profound act of self-love."
 ];
 
-// Current user data (in a real app, this would come from a database)
+// Current user data
 let currentUser = null;
 let displayDate = new Date();
 const today = new Date();
+today.setHours(0, 0, 0, 0); // Normalize today's date to midnight
 
 // Event Listeners
 showLoginBtn.addEventListener('click', () => loginModal.style.display = 'flex');
@@ -62,8 +63,6 @@ loginForm.addEventListener('submit', (e) => {
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
     
-    // In a real app, you would verify credentials with a server
-    // For demo purposes, we'll just check local storage
     const users = JSON.parse(localStorage.getItem('flowUsers')) || [];
     const user = users.find(u => u.email === email && u.password === password);
     
@@ -84,24 +83,24 @@ signupForm.addEventListener('submit', (e) => {
     const cycleLength = parseInt(document.getElementById('cycleLength').value);
     const periodLength = parseInt(document.getElementById('periodLength').value);
     
-    // In a real app, you would send this data to a server
-    // For demo purposes, we'll store in localStorage
     const users = JSON.parse(localStorage.getItem('flowUsers')) || [];
     
-    // Check if email already exists
     if (users.some(user => user.email === email)) {
         alert('Email already registered. Please login instead.');
         return;
     }
     
-    // Create new user
+    // Create new user with proper date handling
+    const lastPeriodDate = new Date(lastPeriod);
+    lastPeriodDate.setHours(0, 0, 0, 0); // Normalize to midnight
+    
     const newUser = {
         id: Date.now().toString(),
         name,
         email,
-        password, // In a real app, this would be hashed
+        password,
         cycleData: {
-            lastPeriod: new Date(lastPeriod),
+            lastPeriod: lastPeriodDate,
             cycleLength,
             periodLength
         }
@@ -109,14 +108,15 @@ signupForm.addEventListener('submit', (e) => {
     
     users.push(newUser);
     localStorage.setItem('flowUsers', JSON.stringify(users));
+    localStorage.setItem('flowLoggedInUser', newUser.id);
     
-    // Log user in
     loginUser(newUser);
 });
 
 // Logout Button
 logoutBtn.addEventListener('click', () => {
     currentUser = null;
+    localStorage.removeItem('flowLoggedInUser');
     dashboard.style.display = 'none';
     document.querySelector('nav').style.display = 'block';
     document.querySelector('.hero').style.display = 'block';
@@ -138,15 +138,21 @@ nextMonth.addEventListener('click', () => {
 cycleSettingsForm.addEventListener('submit', (e) => {
     e.preventDefault();
     
-    const lastPeriod = document.getElementById('updateLastPeriod').value;
+    const lastPeriodInput = document.getElementById('updateLastPeriod').value;
     const cycleLength = parseInt(document.getElementById('updateCycleLength').value);
     const periodLength = parseInt(document.getElementById('updatePeriodLength').value);
     
     if (!currentUser) return;
     
-    // Update user data
+    // Update user data with proper date handling
+    let lastPeriodDate = currentUser.cycleData.lastPeriod;
+    if (lastPeriodInput) {
+        lastPeriodDate = new Date(lastPeriodInput);
+        lastPeriodDate.setHours(0, 0, 0, 0);
+    }
+    
     currentUser.cycleData = {
-        lastPeriod: lastPeriod ? new Date(lastPeriod) : currentUser.cycleData.lastPeriod,
+        lastPeriod: lastPeriodDate,
         cycleLength: cycleLength || currentUser.cycleData.cycleLength,
         periodLength: periodLength || currentUser.cycleData.periodLength
     };
@@ -170,6 +176,12 @@ cycleSettingsForm.addEventListener('submit', (e) => {
 function loginUser(user) {
     currentUser = user;
     userName.textContent = user.name;
+    
+    // Ensure proper date handling
+    if (typeof currentUser.cycleData.lastPeriod === 'string') {
+        currentUser.cycleData.lastPeriod = new Date(currentUser.cycleData.lastPeriod);
+    }
+    currentUser.cycleData.lastPeriod.setHours(0, 0, 0, 0);
     
     // Fill in cycle settings form
     document.getElementById('updateLastPeriod').valueAsDate = new Date(currentUser.cycleData.lastPeriod);
@@ -195,13 +207,16 @@ function updateCycleInfo() {
     if (!currentUser) return;
     
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const lastPeriod = new Date(currentUser.cycleData.lastPeriod);
+    lastPeriod.setHours(0, 0, 0, 0);
     const cycleLength = currentUser.cycleData.cycleLength;
     const periodLength = currentUser.cycleData.periodLength;
     
     // Calculate days since last period
-    const daysSinceLastPeriod = Math.floor((today - lastPeriod) / (1000 * 60 * 60 * 24));
-    const dayInCycle = (daysSinceLastPeriod % cycleLength) + 1;
+    const timeDiff = today - lastPeriod;
+    const daysSinceLastPeriod = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+    const dayInCycle = ((daysSinceLastPeriod % cycleLength) + cycleLength) % cycleLength + 1;
     
     // Calculate days until next period
     const daysUntilNextPeriod = cycleLength - dayInCycle + 1;
@@ -246,6 +261,7 @@ function renderCalendar() {
     
     // Get last period date from user data
     const lastPeriod = new Date(currentUser.cycleData.lastPeriod);
+    lastPeriod.setHours(0, 0, 0, 0);
     const cycleLength = currentUser.cycleData.cycleLength;
     const periodLength = currentUser.cycleData.periodLength;
     
@@ -263,6 +279,7 @@ function renderCalendar() {
         dayElement.textContent = day;
         
         const currentDate = new Date(displayDate.getFullYear(), displayDate.getMonth(), day);
+        currentDate.setHours(0, 0, 0, 0);
         
         // Check if it's today
         if (today.getDate() === day && 
@@ -272,11 +289,11 @@ function renderCalendar() {
         }
         
         // Calculate days difference
-        const timeDiff = currentDate.getTime() - lastPeriod.getTime();
+        const timeDiff = currentDate - lastPeriod;
         const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
         
-        // Calculate cycle day (1 to cycleLength)
-        const cycleDay = (daysDiff % cycleLength) + 1;
+        // Calculate cycle day (1 to cycleLength) with proper modulo handling
+        const cycleDay = ((daysDiff % cycleLength) + cycleLength) % cycleLength + 1;
         
         // Apply phase styling
         if (daysDiff >= 0 && cycleDay <= periodLength) {
@@ -329,7 +346,6 @@ function showCyclePhaseInfo(phaseType, phaseDay = null) {
     let description = '';
     let tips = '';
     
-    // Phase-specific content
     switch(phaseType) {
         case 'period':
             title = `Menstruation Phase - Day ${phaseDay}`;
@@ -370,7 +386,6 @@ function showCyclePhaseInfo(phaseType, phaseDay = null) {
 }
 
 function addCalendarLegend() {
-    // Remove existing legend if it exists
     const existingLegend = document.querySelector('.cycle-phase-legend');
     if (existingLegend) existingLegend.remove();
     
@@ -404,7 +419,6 @@ function addCalendarLegend() {
 }
 
 function addCycleTips() {
-    // Remove existing tips if they exist
     const existingTips = document.querySelector('.cycle-tips-container');
     if (existingTips) existingTips.remove();
     
@@ -461,85 +475,6 @@ function initializeDashboard() {
     addCycleTips();
 }
 
-// Additional features
-function trackSymptom(symptomType, severity) {
-    if (!currentUser) return;
-    
-    if (!currentUser.symptoms) {
-        currentUser.symptoms = [];
-    }
-    
-    const symptom = {
-        date: new Date(),
-        type: symptomType,
-        severity: severity
-    };
-    
-    currentUser.symptoms.push(symptom);
-    
-    // Update in storage
-    const users = JSON.parse(localStorage.getItem('flowUsers')) || [];
-    const userIndex = users.findIndex(u => u.id === currentUser.id);
-    if (userIndex !== -1) {
-        users[userIndex] = currentUser;
-        localStorage.setItem('flowUsers', JSON.stringify(users));
-    }
-}
-
-function trackMood(moodType, notes) {
-    if (!currentUser) return;
-    
-    if (!currentUser.moods) {
-        currentUser.moods = [];
-    }
-    
-    const mood = {
-        date: new Date(),
-        type: moodType,
-        notes: notes
-    };
-    
-    currentUser.moods.push(mood);
-    
-    // Update in storage
-    const users = JSON.parse(localStorage.getItem('flowUsers')) || [];
-    const userIndex = users.findIndex(u => u.id === currentUser.id);
-    if (userIndex !== -1) {
-        users[userIndex] = currentUser;
-        localStorage.setItem('flowUsers', JSON.stringify(users));
-    }
-}
-
-function setReminder(daysBeforePeriod) {
-    if (!currentUser) return;
-    
-    alert(`Reminder set! You will be notified ${daysBeforePeriod} days before your expected period.`);
-}
-
-function exportCycleData() {
-    if (!currentUser) return;
-    
-    const cycleData = {
-        user: currentUser.name,
-        email: currentUser.email,
-        lastPeriod: currentUser.cycleData.lastPeriod,
-        cycleLength: currentUser.cycleData.cycleLength,
-        periodLength: currentUser.cycleData.periodLength,
-        symptoms: currentUser.symptoms || [],
-        moods: currentUser.moods || []
-    };
-    
-    const dataStr = JSON.stringify(cycleData, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    
-    const exportLink = document.createElement('a');
-    exportLink.setAttribute('href', dataUri);
-    exportLink.setAttribute('download', `flow_data_${currentUser.name}.json`);
-    document.body.appendChild(exportLink);
-    exportLink.click();
-    document.body.removeChild(exportLink);
-}
-
 // Initialize the app
 document.addEventListener('DOMContentLoaded', () => {
     // Check if user is already logged in from a previous session
@@ -561,17 +496,13 @@ document.addEventListener('DOMContentLoaded', () => {
             email: 'demo@example.com',
             password: 'password',
             cycleData: {
-                lastPeriod: new Date(2025, 3, 5), // April 5, 2025
+                lastPeriod: new Date(new Date().setDate(new Date().getDate() - 5)), // 5 days ago
                 cycleLength: 28,
                 periodLength: 5
             }
         };
+        demoUser.cycleData.lastPeriod.setHours(0, 0, 0, 0);
         users.push(demoUser);
         localStorage.setItem('flowUsers', JSON.stringify(users));
     }
 });
-
-// Helper Functions
-function getDaysInMonth(year, month) {
-    return new Date(year, month + 1, 0).getDate();
-}
