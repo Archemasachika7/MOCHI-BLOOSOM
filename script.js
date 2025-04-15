@@ -39,6 +39,7 @@ const inspirationalMessages = [
 // Current user data (in a real app, this would come from a database)
 let currentUser = null;
 let displayDate = new Date();
+const today = new Date();
 
 // Event Listeners
 showLoginBtn.addEventListener('click', () => loginModal.style.display = 'flex');
@@ -187,8 +188,7 @@ function loginUser(user) {
     inspiration.textContent = inspirationalMessages[Math.floor(Math.random() * inspirationalMessages.length)];
     
     // Initialize dashboard
-    updateCycleInfo();
-    renderCalendar();
+    initializeDashboard();
 }
 
 function updateCycleInfo() {
@@ -236,14 +236,15 @@ function renderCalendar() {
     }
     
     // Update month/year display
-    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const monthNames = ["January", "February", "March", "April", "May", "June", 
+                       "July", "August", "September", "October", "November", "December"];
     currentMonth.textContent = `${monthNames[displayDate.getMonth()]} ${displayDate.getFullYear()}`;
     
-    // Get first day of the month
+    // Get first day of month and number of days in month
     const firstDay = new Date(displayDate.getFullYear(), displayDate.getMonth(), 1);
-    const lastDay = new Date(displayDate.getFullYear(), displayDate.getMonth() + 1, 0);
+    const daysInMonth = new Date(displayDate.getFullYear(), displayDate.getMonth() + 1, 0).getDate();
     
-    // Calculate cycle days
+    // Get last period date from user data
     const lastPeriod = new Date(currentUser.cycleData.lastPeriod);
     const cycleLength = currentUser.cycleData.cycleLength;
     const periodLength = currentUser.cycleData.periodLength;
@@ -251,12 +252,12 @@ function renderCalendar() {
     // Add empty cells for days before the first day of the month
     for (let i = 0; i < firstDay.getDay(); i++) {
         const emptyDay = document.createElement('div');
-        emptyDay.className = 'calendar-day';
+        emptyDay.className = 'calendar-day empty';
         calendarGrid.appendChild(emptyDay);
     }
     
     // Fill in days of the month
-    for (let day = 1; day <= lastDay.getDate(); day++) {
+    for (let day = 1; day <= daysInMonth; day++) {
         const dayElement = document.createElement('div');
         dayElement.className = 'calendar-day';
         dayElement.textContent = day;
@@ -270,23 +271,272 @@ function renderCalendar() {
             dayElement.classList.add('today');
         }
         
-        // Calculate if this day is a period day, ovulation day, or fertile day
-        const daysSinceLastPeriod = Math.floor((currentDate - lastPeriod) / (1000 * 60 * 60 * 24));
-        const cycleDayNumber = (daysSinceLastPeriod % cycleLength) + 1;
+        // Calculate periods and fertile days
+        const timeDiff = currentDate.getTime() - lastPeriod.getTime();
+        const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+        const cycleDay = ((daysDiff % cycleLength) + cycleLength) % cycleLength;
         
-        if (cycleDayNumber <= periodLength) {
+        // Apply phase styling
+        if (cycleDay < periodLength) {
             dayElement.classList.add('period-day');
-            dayElement.title = `Period Day ${cycleDayNumber}`;
-        } else if (cycleDayNumber === cycleLength - 14) {
+            const cycleNumber = Math.floor(daysDiff / cycleLength) + 1;
+            const periodDay = cycleDay + 1;
+            dayElement.title = `Period Day ${periodDay} (Cycle #${cycleNumber})`;
+            dayElement.addEventListener('click', () => showCyclePhaseInfo('period', periodDay));
+        } 
+        else if (cycleDay === cycleLength - 14) {
             dayElement.classList.add('ovulation-day');
             dayElement.title = 'Estimated Ovulation Day';
-        } else if (cycleDayNumber >= cycleLength - 16 && cycleDayNumber <= cycleLength - 11) {
+            dayElement.addEventListener('click', () => showCyclePhaseInfo('ovulation'));
+        } 
+        else if (cycleDay >= cycleLength - 18 && cycleDay <= cycleLength - 12) {
             dayElement.classList.add('fertile-day');
             dayElement.title = 'Fertile Window';
+            dayElement.addEventListener('click', () => showCyclePhaseInfo('fertile'));
+        } 
+        else if (cycleDay >= periodLength && cycleDay < cycleLength - 14) {
+            dayElement.classList.add('follicular-day');
+            dayElement.title = 'Follicular Phase';
+            dayElement.addEventListener('click', () => showCyclePhaseInfo('follicular'));
+        } 
+        else {
+            dayElement.classList.add('luteal-day');
+            dayElement.title = 'Luteal Phase';
+            dayElement.addEventListener('click', () => showCyclePhaseInfo('luteal'));
         }
         
         calendarGrid.appendChild(dayElement);
     }
+    
+    // Add legend after calendar renders
+    addCalendarLegend();
+}
+
+function showCyclePhaseInfo(phaseType, phaseDay = null) {
+    const infoModal = document.createElement('div');
+    infoModal.className = 'cycle-info-modal';
+    
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'modal-close-btn';
+    closeBtn.innerHTML = '&times;';
+    closeBtn.onclick = () => infoModal.remove();
+    
+    const content = document.createElement('div');
+    content.className = 'cycle-info-content';
+    
+    let title = '';
+    let description = '';
+    let tips = '';
+    
+    // Phase-specific content
+    switch(phaseType) {
+        case 'period':
+            title = `Menstruation Phase - Day ${phaseDay}`;
+            description = 'During your period, the lining of your uterus is being shed. This is a time when you may experience various symptoms such as cramping, fatigue, and mood changes.';
+            tips = '<strong>Self-care tips:</strong><br>• Stay hydrated<br>• Use heat therapy for cramps<br>• Gentle exercise can help with blood flow<br>• Rest when you need to<br>• Consider anti-inflammatory foods';
+            break;
+        case 'ovulation':
+            title = 'Ovulation Day';
+            description = 'Ovulation is when your ovary releases an egg, which typically happens around the middle of your cycle. This is your most fertile time.';
+            tips = '<strong>Things to note:</strong><br>• Peak fertility window<br>• May experience mild pain on one side<br>• Energy levels are often higher<br>• Libido may increase';
+            break;
+        case 'fertile':
+            title = 'Fertile Window';
+            description = 'Your fertile window includes several days before ovulation and about 24 hours after. Sperm can survive for up to 5 days in the female reproductive tract.';
+            tips = '<strong>What to know:</strong><br>• High chance of pregnancy if unprotected sex occurs<br>• Cervical mucus becomes clearer and more stretchy<br>• Good time for creative projects';
+            break;
+        case 'follicular':
+            title = 'Follicular Phase';
+            description = 'The follicular phase starts with your period and continues until ovulation. During this time, follicles in your ovaries mature, and estrogen levels begin to rise.';
+            tips = '<strong>Lifestyle tips:</strong><br>• Good time to start new projects<br>• Energy typically increases after period ends<br>• Strength training can be especially effective';
+            break;
+        case 'luteal':
+            title = 'Luteal Phase';
+            description = 'The luteal phase occurs after ovulation and before your next period. Progesterone rises, which can cause premenstrual symptoms for some.';
+            tips = '<strong>Self-care suggestions:</strong><br>• Focus on completing projects<br>• Gentle exercise like yoga<br>• Extra self-care may be needed<br>• Mindfulness practices can help';
+            break;
+    }
+    
+    content.innerHTML = `
+        <h3>${title}</h3>
+        <p class="phase-description">${description}</p>
+        <div class="phase-tips">${tips}</div>
+    `;
+    
+    infoModal.appendChild(closeBtn);
+    infoModal.appendChild(content);
+    document.body.appendChild(infoModal);
+}
+
+function addCalendarLegend() {
+    // Remove existing legend if it exists
+    const existingLegend = document.querySelector('.cycle-phase-legend');
+    if (existingLegend) existingLegend.remove();
+    
+    const legendContainer = document.createElement('div');
+    legendContainer.className = 'cycle-phase-legend';
+    
+    const legendItems = [
+        { class: 'legend-period', text: 'Period' },
+        { class: 'legend-ovulation', text: 'Ovulation' },
+        { class: 'legend-fertile', text: 'Fertile Window' },
+        { class: 'legend-follicular', text: 'Follicular Phase' },
+        { class: 'legend-luteal', text: 'Luteal Phase' }
+    ];
+    
+    legendItems.forEach(item => {
+        const legendItem = document.createElement('div');
+        legendItem.className = 'legend-item';
+        
+        const colorIndicator = document.createElement('div');
+        colorIndicator.className = `legend-color ${item.class}`;
+        
+        const text = document.createElement('span');
+        text.textContent = item.text;
+        
+        legendItem.appendChild(colorIndicator);
+        legendItem.appendChild(text);
+        legendContainer.appendChild(legendItem);
+    });
+    
+    document.querySelector('.calendar-container').appendChild(legendContainer);
+}
+
+function addCycleTips() {
+    // Remove existing tips if they exist
+    const existingTips = document.querySelector('.cycle-tips-container');
+    if (existingTips) existingTips.remove();
+    
+    const tipsContainer = document.createElement('div');
+    tipsContainer.className = 'cycle-tips-container';
+    tipsContainer.innerHTML = `
+        <h3 class="tips-title">Cycle Health Tips</h3>
+        <div class="tips-carousel">
+            <div class="tip-card">
+                <h4>Period Care</h4>
+                <p>Stay hydrated and consider iron-rich foods to replenish what's lost during menstruation. Heat therapy can help with cramps.</p>
+            </div>
+            <div class="tip-card">
+                <h4>Tracking Benefits</h4>
+                <p>Consistent tracking helps identify patterns in your cycle and can alert you to potential hormonal imbalances or health issues.</p>
+            </div>
+            <div class="tip-card">
+                <h4>Cycle Syncing</h4>
+                <p>Consider aligning activities with your cycle phases: high-intensity workouts during follicular phase, creative work during ovulation.</p>
+            </div>
+        </div>
+        <button class="prev-tip">❮</button>
+        <button class="next-tip">❯</button>
+    `;
+    
+    const periodInfo = document.querySelector('.period-info');
+    periodInfo.parentNode.insertBefore(tipsContainer, periodInfo.nextSibling);
+    
+    // Add carousel functionality
+    let currentTip = 0;
+    const tipCards = tipsContainer.querySelectorAll('.tip-card');
+    const carousel = tipsContainer.querySelector('.tips-carousel');
+    
+    tipsContainer.querySelector('.prev-tip').addEventListener('click', () => {
+        currentTip = (currentTip > 0) ? currentTip - 1 : tipCards.length - 1;
+        carousel.scrollTo({
+            left: currentTip * tipCards[0].offsetWidth,
+            behavior: 'smooth'
+        });
+    });
+    
+    tipsContainer.querySelector('.next-tip').addEventListener('click', () => {
+        currentTip = (currentTip < tipCards.length - 1) ? currentTip + 1 : 0;
+        carousel.scrollTo({
+            left: currentTip * tipCards[0].offsetWidth,
+            behavior: 'smooth'
+        });
+    });
+}
+
+function initializeDashboard() {
+    updateCycleInfo();
+    renderCalendar();
+    addCycleTips();
+}
+
+// Additional features
+function trackSymptom(symptomType, severity) {
+    if (!currentUser) return;
+    
+    if (!currentUser.symptoms) {
+        currentUser.symptoms = [];
+    }
+    
+    const symptom = {
+        date: new Date(),
+        type: symptomType,
+        severity: severity
+    };
+    
+    currentUser.symptoms.push(symptom);
+    
+    // Update in storage
+    const users = JSON.parse(localStorage.getItem('flowUsers')) || [];
+    const userIndex = users.findIndex(u => u.id === currentUser.id);
+    if (userIndex !== -1) {
+        users[userIndex] = currentUser;
+        localStorage.setItem('flowUsers', JSON.stringify(users));
+    }
+}
+
+function trackMood(moodType, notes) {
+    if (!currentUser) return;
+    
+    if (!currentUser.moods) {
+        currentUser.moods = [];
+    }
+    
+    const mood = {
+        date: new Date(),
+        type: moodType,
+        notes: notes
+    };
+    
+    currentUser.moods.push(mood);
+    
+    // Update in storage
+    const users = JSON.parse(localStorage.getItem('flowUsers')) || [];
+    const userIndex = users.findIndex(u => u.id === currentUser.id);
+    if (userIndex !== -1) {
+        users[userIndex] = currentUser;
+        localStorage.setItem('flowUsers', JSON.stringify(users));
+    }
+}
+
+function setReminder(daysBeforePeriod) {
+    if (!currentUser) return;
+    
+    alert(`Reminder set! You will be notified ${daysBeforePeriod} days before your expected period.`);
+}
+
+function exportCycleData() {
+    if (!currentUser) return;
+    
+    const cycleData = {
+        user: currentUser.name,
+        email: currentUser.email,
+        lastPeriod: currentUser.cycleData.lastPeriod,
+        cycleLength: currentUser.cycleData.cycleLength,
+        periodLength: currentUser.cycleData.periodLength,
+        symptoms: currentUser.symptoms || [],
+        moods: currentUser.moods || []
+    };
+    
+    const dataStr = JSON.stringify(cycleData, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    
+    const exportLink = document.createElement('a');
+    exportLink.setAttribute('href', dataUri);
+    exportLink.setAttribute('download', `flow_data_${currentUser.name}.json`);
+    document.body.appendChild(exportLink);
+    exportLink.click();
+    document.body.removeChild(exportLink);
 }
 
 // Initialize the app
@@ -323,90 +573,4 @@ document.addEventListener('DOMContentLoaded', () => {
 // Helper Functions
 function getDaysInMonth(year, month) {
     return new Date(year, month + 1, 0).getDate();
-}
-
-// Additional features (to be implemented)
-
-// 1. Symptom tracking
-function trackSymptom(symptomType, severity) {
-    if (!currentUser) return;
-    
-    if (!currentUser.symptoms) {
-        currentUser.symptoms = [];
-    }
-    
-    const symptom = {
-        date: new Date(),
-        type: symptomType,
-        severity: severity
-    };
-    
-    currentUser.symptoms.push(symptom);
-    
-    // Update in storage
-    const users = JSON.parse(localStorage.getItem('flowUsers')) || [];
-    const userIndex = users.findIndex(u => u.id === currentUser.id);
-    if (userIndex !== -1) {
-        users[userIndex] = currentUser;
-        localStorage.setItem('flowUsers', JSON.stringify(users));
-    }
-}
-
-// 2. Mood tracking
-function trackMood(moodType, notes) {
-    if (!currentUser) return;
-    
-    if (!currentUser.moods) {
-        currentUser.moods = [];
-    }
-    
-    const mood = {
-        date: new Date(),
-        type: moodType,
-        notes: notes
-    };
-    
-    currentUser.moods.push(mood);
-    
-    // Update in storage
-    const users = JSON.parse(localStorage.getItem('flowUsers')) || [];
-    const userIndex = users.findIndex(u => u.id === currentUser.id);
-    if (userIndex !== -1) {
-        users[userIndex] = currentUser;
-        localStorage.setItem('flowUsers', JSON.stringify(users));
-    }
-}
-
-// 3. Generate reminder notifications (simulated)
-function setReminder(daysBeforePeriod) {
-    if (!currentUser) return;
-    
-    alert(`Reminder set! You will be notified ${daysBeforePeriod} days before your expected period.`);
-    
-    // In a real app, this would store the reminder preference and send actual notifications
-}
-
-// 4. Export cycle data
-function exportCycleData() {
-    if (!currentUser) return;
-    
-    const cycleData = {
-        user: currentUser.name,
-        email: currentUser.email,
-        lastPeriod: currentUser.cycleData.lastPeriod,
-        cycleLength: currentUser.cycleData.cycleLength,
-        periodLength: currentUser.cycleData.periodLength,
-        symptoms: currentUser.symptoms || [],
-        moods: currentUser.moods || []
-    };
-    
-    const dataStr = JSON.stringify(cycleData, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    
-    const exportLink = document.createElement('a');
-    exportLink.setAttribute('href', dataUri);
-    exportLink.setAttribute('download', `flow_data_${currentUser.name}.json`);
-    document.body.appendChild(exportLink);
-    exportLink.click();
-    document.body.removeChild(exportLink);
 }
